@@ -1,88 +1,86 @@
-# Project Title
+# Descargar series de Google Trends
 
-One Paragraph of project description goes here
+Se descargan series de combinaciones de palabras, según la data de interés.
 
-## Getting Started
+## Librerías
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
-
-### Prerequisites
-
-What things you need to install the software and how to install them
+Se usará pandas para el manejo de datos y "pytrends" una API no oficial de Google trends.
 
 ```
-Give examples
+import pandas as pd
+from pytrends.request import TrendReq
 ```
 
-### Installing
+### Información preliminar requerida
 
-A step by step series of examples that tell you how to get a development env running
+Se eligen las palabras de interés, llenando entre las comillas las palabras principales y disponiendo de una archivo Excel que corresponde a las palabras que le seguirán a las principales en la búsqueda.
 
-Say what the step will be
-
-```
-Give the example
-```
-
-And repeat
+Para nuestro criterio se decidió de una base de datos únicamento usar las palabras que como frecuencia se repetieran más de 7 veces.
 
 ```
-until finished
+candidate_firstname = "carlos"
+candidate_lastname = "Galan"
+
+df = pd.read_excel("C:/Users/EJEMPLO/Downloads/"+ candidate_lastname +".xlsx")
+
+df = df[['Palabras','Frequencia']]
+df = df[df['Frequencia']>7]
 ```
 
-End with an example of getting some data out of the system or using it for a little demo
+### Conexión a Google
 
-## Running the tests
-
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
+Se realiza mediante la siguiente línea
 
 ```
-Give an example
+pytrends = TrendReq(hl = 'en-US', tz = 360)
+```
+### Combinación palabras principales y secundarias de búsqueda
+
+Con la función se crean dos columnas en el data frame, una que contiene, para este caso, el "primer nombre del candidato" + las palabras secundarias elegidas por frecuencia y en la segunda columna, la misma información pero esta vez con el "segundo nombre del candidato"
+
+```
+df['Palabras1'] = df['Palabras'].apply(lambda x:x + " " + candidate_firstname)
+df['Palabras2'] = df['Palabras'].apply(lambda x:x + " " + candidate_lastname)
 ```
 
-### And coding style tests
-
-Explain what these tests test and why
+Se crea una lista de palabras usando ambos data frame, posteriormente se crean listas de hasta 5 elementos y se almacena cada grupo en una posición de grupos_palabras[]
 
 ```
-Give an example
+palabras = list(df['Palabras1']) + list(df['Palabras2'])
+
+grupos_palabras = list(zip(*[iter(palabras)]*5))
+grupos_palabras = [list(x) for x in grupos_palabras]
 ```
 
-## Deployment
+## Obtención Series
 
-Add additional notes about how to deploy this on a live system
+Para cada grupo de palabras se especifican los parámetros de búsqueda.
+En este caso, la lista de palabras a buscar, el tiempo: entre hoy y 5 años atrás, y en geografía 'CO' de Colombia.
 
-## Built With
+Usando "pytrends.interest_over_time()" obtenemos el puntaje que ha recibido la búsqueda del elemento de la lista indicado.
 
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
+```
+dicti = {}
+i = 1
+for palabras in grupos_palabras:
+    pytrends.build_payload(palabras, timeframe = 'today 5-y', geo = 'CO')
+    dicti[i] = pytrends.interest_over_time()
+    i+=1
+```
 
-## Contributing
+### Guardar data
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
+El archivo se exporta .xlsx
 
-## Versioning
+```
+prueba.to_excel("CarlosGalanGoogleTrends.xlsx")
+```
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
 
-## Authors
+## Construido con
 
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
+* [pytrends](https://github.com/GeneralMills/pytrends) 
 
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+## Autores
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
-
+Semillero Data Science.
